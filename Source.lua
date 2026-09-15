@@ -754,10 +754,41 @@ function Library.CreateWindow(config)
 		PageLayout.FillDirection = Enum.FillDirection.Horizontal
 		PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		PageLayout.Padding = UDim.new(0, 12)
+		PageLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 		PageLayout.Parent = ContentPage
+
+		local LeftColumn = Instance.new("Frame")
+		LeftColumn.Name = "LeftColumn"
+		LeftColumn.Size = UDim2.new(0.5, -6, 1, 0)
+		LeftColumn.BackgroundTransparency = 1
+		LeftColumn.LayoutOrder = 1
+		LeftColumn.Parent = ContentPage
+
+		local LeftColLayout = Instance.new("UIListLayout")
+		LeftColLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		LeftColLayout.FillDirection = Enum.FillDirection.Vertical
+		LeftColLayout.Padding = UDim.new(0, 10)
+		LeftColLayout.Parent = LeftColumn
+
+		local RightColumn = Instance.new("Frame")
+		RightColumn.Name = "RightColumn"
+		RightColumn.Size = UDim2.new(0.5, -6, 1, 0)
+		RightColumn.BackgroundTransparency = 1
+		RightColumn.LayoutOrder = 2
+		RightColumn.Parent = ContentPage
+
+		local RightColLayout = Instance.new("UIListLayout")
+		RightColLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		RightColLayout.FillDirection = Enum.FillDirection.Vertical
+		RightColLayout.Padding = UDim.new(0, 10)
+		RightColLayout.Parent = RightColumn
 
 		tabObj.ContentPage = ContentPage
 		tabObj._pageLayout = PageLayout
+		tabObj._leftColumn = LeftColumn
+		tabObj._rightColumn = RightColumn
+		tabObj._leftColLayout = LeftColLayout
+		tabObj._rightColLayout = RightColLayout
 
 		local TabBtn = Instance.new("TextButton")
 		TabBtn.Name = "Tab_" .. tabName
@@ -858,10 +889,39 @@ function Library.CreateWindow(config)
 				SubPageLayout.FillDirection = Enum.FillDirection.Horizontal
 				SubPageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				SubPageLayout.Padding = UDim.new(0, 12)
+				SubPageLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 				SubPageLayout.Parent = SubPage
+
+				local SubLeftCol = Instance.new("Frame")
+				SubLeftCol.Name = "LeftColumn"
+				SubLeftCol.Size = UDim2.new(0.5, -6, 1, 0)
+				SubLeftCol.BackgroundTransparency = 1
+				SubLeftCol.LayoutOrder = 1
+				SubLeftCol.Parent = SubPage
+
+				local SubLeftColLayout = Instance.new("UIListLayout")
+				SubLeftColLayout.SortOrder = Enum.SortOrder.LayoutOrder
+				SubLeftColLayout.FillDirection = Enum.FillDirection.Vertical
+				SubLeftColLayout.Padding = UDim.new(0, 10)
+				SubLeftColLayout.Parent = SubLeftCol
+
+				local SubRightCol = Instance.new("Frame")
+				SubRightCol.Name = "RightColumn"
+				SubRightCol.Size = UDim2.new(0.5, -6, 1, 0)
+				SubRightCol.BackgroundTransparency = 1
+				SubRightCol.LayoutOrder = 2
+				SubRightCol.Parent = SubPage
+
+				local SubRightColLayout = Instance.new("UIListLayout")
+				SubRightColLayout.SortOrder = Enum.SortOrder.LayoutOrder
+				SubRightColLayout.FillDirection = Enum.FillDirection.Vertical
+				SubRightColLayout.Padding = UDim.new(0, 10)
+				SubRightColLayout.Parent = SubRightCol
 
 				subObj.ContentPage = SubPage
 				subObj._pageLayout = SubPageLayout
+				subObj._leftColumn = SubLeftCol
+				subObj._rightColumn = SubRightCol
 
 				local SubBtn = Instance.new("TextButton")
 				SubBtn.Name = "SubTab_" .. subData.Name
@@ -967,29 +1027,40 @@ function Library.CreateWindow(config)
 			local sectionName = sectionConfig.Name or "Section"
 			local side = sectionConfig.Side or "Left"
 
-			local page = tabObj.ContentPage
-			local pageLayout = tabObj._pageLayout
+			local column
+			if side == "Left" then
+				column = tabObj._leftColumn
+			else
+				column = tabObj._rightColumn
+			end
+
+			local existingInCol = 0
+			for _, c in ipairs(column:GetChildren()) do
+				if c:IsA("Frame") and c.Name:sub(1, 8) == "Section_" then
+					existingInCol = existingInCol + 1
+				end
+			end
 
 			local SectionFrame = Instance.new("Frame")
 			SectionFrame.Name = "Section_" .. sectionName
 			SectionFrame.BackgroundColor3 = COLOR_CARD_BG
 			SectionFrame.BorderSizePixel = 0
 			SectionFrame.ClipsDescendants = true
-			SectionFrame.LayoutOrder = side == "Left" and 1 or 2
-			SectionFrame.Parent = page
+			SectionFrame.LayoutOrder = existingInCol + 1
 
-			local existingChildren = 0
-			for _, c in ipairs(page:GetChildren()) do
+			if existingInCol == 0 then
+				SectionFrame.Size = UDim2.new(1, 0, 1, 0)
+			else
+				SectionFrame.Size = UDim2.new(1, 0, 0.5, -5)
+			end
+
+			for _, c in ipairs(column:GetChildren()) do
 				if c:IsA("Frame") and c.Name:sub(1, 8) == "Section_" then
-					existingChildren = existingChildren + 1
+					c.Size = UDim2.new(1, 0, 0.5, -5)
 				end
 			end
 
-			if existingChildren <= 1 then
-				SectionFrame.Size = UDim2.new(0.5, -6, 1, 0)
-			else
-				SectionFrame.Size = UDim2.new(0.5, -6, 1, 0)
-			end
+			SectionFrame.Parent = column
 
 			local SecCorner = Instance.new("UICorner")
 			SecCorner.CornerRadius = UDim.new(0, 8)
@@ -1068,10 +1139,10 @@ function Library.CreateWindow(config)
 				SecContent.Visible = isExpanded
 				SecDivider.Visible = isExpanded
 				if isExpanded then
-					SectionFrame.Size = UDim2.new(SectionFrame.Size.X.Scale, SectionFrame.Size.X.Offset, 1, 0)
+					SectionFrame.Size = UDim2.new(1, 0, SectionFrame.Size.Y.Scale, SectionFrame.Size.Y.Offset)
 					ToggleBtn2.Rotation = 0
 				else
-					SectionFrame.Size = UDim2.new(SectionFrame.Size.X.Scale, SectionFrame.Size.X.Offset, 0, 35)
+					SectionFrame.Size = UDim2.new(1, 0, 0, 35)
 					ToggleBtn2.Rotation = 180
 				end
 			end)
